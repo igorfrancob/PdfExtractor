@@ -1,0 +1,14 @@
+version: '3'
+
+services:
+    server:
+        build: 
+            context: ../.
+            dockerfile: docker/python.Dockerfile
+        volumes: 
+            - ../reader.py:/home/reader.py
+            - ../pdf/60751689-Modelo-Contra-Cheque.pdf:/home/60751689-Modelo-Contra-Cheque.pdf
+            - ./policy.xml:/etc/ImageMagick-6/policy.xml
+            - ../:/home
+        command: python3 reader.py /home/60751689-Modelo-Contra-Cheque.pdf
+        working_dir: /home
