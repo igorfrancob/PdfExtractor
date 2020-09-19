@@ -11,24 +11,29 @@ class Pdf:
     def __init__(self, name):
         self.name = name
 
+    def improvment(self):
+        img = Image.open('/home/pdf/cropped.jpg')
+        new_size = tuple(2*x for x in img.size)
+        img = img.resize(new_size, Image.ANTIALIAS)
+        print('TETSE')
+        print(pytesseract.image_to_string(img))
+
     def transformPdfImage(self):
         with tempfile.TemporaryDirectory() as path:
-            images_from_path = convert_from_path(self.name, 800)
+            images_from_path = convert_from_path(self.name, 200)
             for page in images_from_path:
-                page.save('/home/pdf/image' + ".jpg", 'JPEG')
-        pages = convert_from_path(self.name, 500)
-        for page in pages:
-            page.save('/home/pdf/out.jpg', 'JPEG')
+                page.save('/home/pdf/image' + ".jpg", 'PNG')
 
     def cutImage(self, x1, y1, x2, y2):
         imageObject = Image.open('/home/pdf/image' ".jpg")
         w, h = imageObject.size
         cropped = imageObject.crop((w-(x1*w/100), h-(y1*h/100), w-(x2*w/100), h-(y2*h/100)))
-        cropped.save('/home/pdf/cropped.jpg', 'JPEG')
+        cropped.save('/home/pdf/cropped.jpg', 'PNG')
 
     def imageToText(self, filename):
         img = Image.open('/home/pdf/out' ".jpg")
-        result = pytesseract.image_to_string('/home/pdf/cropped' ".jpg", config='--psm 6 --oem 3 -c tessedit_char_whitelist=|_0123456789ABCDEFGHIJKLMNOPQRSTUVXZÇ./,abcdefghijklmnopqrstuvxzç')
+        result = pytesseract.image_to_string('/home/pdf/cropped' ".jpg", config='--psm 6 --oem 3 -c preserve_interword_spaces=1x1 tessedit_char_whitelist=|_0123456789ABCDEFGHIJKLMNOPQRSTUVXZÇ./,abcdefghijklmnopqrstuvxzç')
+        self.improvment()
         with open(filename, mode='w') as file:
             file.write(result)
         print(result)
@@ -59,3 +64,5 @@ if __name__ == '__main__':
     pdf.transformPdfImage()
     pdf.cutImage(29, 83, 13.3, 63)
     pdf.imageToText('/home/pdf/descontos.txt')
+
+    pdf.improvment()
