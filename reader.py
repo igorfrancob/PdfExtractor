@@ -4,7 +4,6 @@ import tempfile
 from pdf2image import convert_from_path
 from PIL import Image
 import pytesseract  # Módulo para a utilização da tecnologia OCR
-import cv2
 
 
 class Pdf:
@@ -33,11 +32,14 @@ class Pdf:
     def imageToText(self, filename):
         img = Image.open('/home/pdf/out' ".jpg")
         result = pytesseract.image_to_string('/home/pdf/cropped' ".jpg", config='--psm 6 --oem 3 -c preserve_interword_spaces=1x1 tessedit_char_whitelist=|_0123456789ABCDEFGHIJKLMNOPQRSTUVXZÇ./,abcdefghijklmnopqrstuvxzç')
-        self.improvment()
         with open(filename, mode='w') as file:
             file.write(result)
         print(result)
 
+    def imageToArray(self):
+        img = Image.open('/home/pdf/image' ".jpg")
+        result = pytesseract.image_to_string('/home/pdf/cropped' ".jpg", config='--psm 6 --oem 3 -c preserve_interword_spaces=1x1 tessedit_char_whitelist=|_0123456789ABCDEFGHIJKLMNOPQRSTUVXZÇ./,abcdefghijklmnopqrstuvxzç')
+        return result
 
 if __name__ == '__main__':
     pdf = Pdf('/home/60751689-Modelo-Contra-Cheque.pdf')

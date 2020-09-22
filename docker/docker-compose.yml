@@ -7,8 +7,11 @@ services:
             dockerfile: docker/python.Dockerfile
         volumes: 
             - ../reader.py:/home/reader.py
+            - ../app.py:/home/app.py
             - ../pdf/60751689-Modelo-Contra-Cheque.pdf:/home/60751689-Modelo-Contra-Cheque.pdf
             - ./policy.xml:/etc/ImageMagick-6/policy.xml
-            - ../:/home
-        command: python3 reader.py /home/60751689-Modelo-Contra-Cheque.pdf
+            - ../.:/home
+        command: bash -c "export FLASK_DEBUG=1 && flask run --host 0.0.0.0"
+        ports: 
+            - "5000:5000"
         working_dir: /home

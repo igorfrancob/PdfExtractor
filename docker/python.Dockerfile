@@ -8,5 +8,4 @@ RUN apt-get install poppler-utils -y
 RUN pip3 install pytesseract
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 RUN apt-get -y install tesseract-ocr tesseract-ocr-por
-RUN pip3 install opencv-python
-RUN apt-get install -y libgl1-mesa-glx
+RUN pip3 install Flask
