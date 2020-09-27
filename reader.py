@@ -26,7 +26,7 @@ class Pdf:
     def cutImage(self, x1, y1, x2, y2):
         imageObject = Image.open('/home/pdf/image' ".jpg")
         w, h = imageObject.size
-        cropped = imageObject.crop((w-(x1*w/100), h-(y1*h/100), w-(x2*w/100), h-(y2*h/100)))
+        cropped = imageObject.crop((x1,y1,x1+x2,y1+y2))
         cropped.save('/home/pdf/cropped.jpg', 'PNG')
 
     def imageToText(self, filename):

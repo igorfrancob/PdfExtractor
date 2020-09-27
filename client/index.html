@@ -4,12 +4,360 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDF Extractor</title>
+    <style>.rectangle {
+        border: 1px solid #FF0000;
+        position: absolute;
+    }</style>
 </head>
 <body>
-    <form enctype="multipart/form-data" action="http://localhost:5000/upload?upload_progress_id=12344" method="POST">
-        <input type=file name=file>
+    <input name="path" value="/home/pdf/60751689-Modelo-Contra-Cheque.pdf" />
+    <form id="upload" enctype="multipart/form-data"">
+        <input type=file id='file' name=file>
         <input type=submit value=Upload>
-        <input
     </form>
+    <dialog id="fields">
+        Informe o nome do campo:
+        <input name="fieldName" />
+        Informe a descricao:
+        <input name="header" />
+        <button id="confirm">Confirmar</button>
+    </dialog>
+    <button id="submit">Submit</button>
+    
+    <canvas id="viewport" style="display:none;background: url('/static/image.jpg')"  width="1654" height="2339"></canvas>
+    <div id="table"></div>
+<script
+    src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
+    integrity="sha256-4+XzXVhsDmqanXGHaHvgh1gMQKX40OUvDEBTu8JcmNs="
+    crossorigin="anonymous">
+</script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+    function modal() { 
+        document.getElementById("fields").showModal(); 
+    }
+</script>
+<script>
+    function nl2br (str, is_xhtml) {
+        if (typeof str === 'undefined' || str === null) {
+            return '';
+        }
+        var breakTag = (is_xhtml || typeof is_xhtml === 'undefined') ? '<br />' : '<br>';
+        return (str + '').replace(/([^>\r\n]?)(\r\n|\n\r|\r|\n)/g, '$1' + breakTag + '$2');
+    }
+    $('#upload').on('submit', function(e) {
+        e.preventDefault()
+        var formData = new FormData();
+        var imagefile = document.querySelector('#file');
+        console.log(imagefile)
+        formData.append("file", imagefile.files[0]);
+        axios.post('http://localhost:5000/upload', formData, {
+            headers: {
+            'Content-Type': 'multipart/form-data'
+            }
+        }).then(function (response){
+            
+            $('#viewport').css("background-image", "url(" + 'data:image/jpeg;base64,' +response.data +")"); 
+            $('#viewport').show()
+            console.log($('#testimage').attr('src'))
+        })
+    })
+
+    let send = {
+        pdf: {
+            path: $('[name=path]').val()
+        },
+        extract:[]
+    }
+    
+    $('#submit').on('click', function(){
+        console.log(send)
+        axios.post('/test', send)
+        .then(function (response) {
+            JSON2Table('table', response.data, 'json', {id:'test'});
+        })
+        .catch(function (error) {
+            console.log(error);
+        });
+    })
+    var isDown;
+    var start;
+    var end;
+    var canvasEl = document.getElementById("viewport");
+    var draw = canvasEl.getContext("2d");
+    draw.lineWidth = "2";
+    draw.strokeStyle = "blue";
+    var lastWidth = 0;
+    var lastHeight = 0;
+
+    $("#viewport").mousedown(function(e) {
+        isDown = true;
+        console.log('up')
+        start = getMousePos(canvasEl, e);
+        end = getMousePos(canvasEl, e);
+        lastWidth = 0;
+        lastHeight = 0;
+        e.preventDefault();
+    });
+
+    $("#viewport").mouseup(function() {
+        modal()
+
+        $('#confirm').on('click', function(){
+            document.getElementById("fields").close()
+            send.extract.push({ 
+                "fieldName" : $('[name=fieldName]').val(),
+                "header" : $('[name=header]').val(),
+                "x": start.x,
+                "y": start.y,
+                "width": lastWidth,
+                "height": lastHeight
+            })
+
+            console.log('mouseup')
+            console.log('start.x',start.x)
+            console.log('start.y',start.y)
+            console.log('lastWidth', lastWidth)
+            console.log('lasteHeight', lastHeight)
+            console.log(send)
+            isDown = false;
+        })
+    });
+
+    $("#viewport").mousemove(function(e) {
+        if (!isDown) return;
+
+        var end = getMousePos(canvasEl, e);
+        var h = end.y - start.y;
+        var w = end.x - start.x;
+        draw.clearRect(start.x-5, start.y-5, lastWidth + 6, lastHeight + 6);
+        draw.beginPath();
+        draw.rect(start.x, start.y, w, h);
+        lastWidth = w;
+        lastHeight = h;
+        draw.stroke();
+        draw.closePath();
+    });
+
+
+function getMousePos(canvas, evt) {
+        var rect = canvas.getBoundingClientRect();
+        return {
+            x: Math.floor(evt.clientX - rect.left),
+            y: Math.floor(evt.clientY - rect.top)
+        };
+    }
+
+</script>
+
+<script>
+    var _table_ = document.createElement('table'),
+  _tr_ = document.createElement('tr'),
+  _th_ = document.createElement('th'),
+  _td_ = document.createElement('td');
+
+// Builds the HTML Table out of myList json data from Ivy restful service.
+function buildHtmlTable(arr) {
+  var table = _table_.cloneNode(false),
+    columns = addAllColumnHeaders(arr, table);
+  for (var i = 0, maxi = arr.length; i < maxi; ++i) {
+    var tr = _tr_.cloneNode(false);
+    for (var j = 0, maxj = columns.length; j < maxj; ++j) {
+      var td = _td_.cloneNode(false);
+      cellValue = arr[i][columns[j]];
+      td.appendChild(document.createTextNode(arr[i][columns[j]] || ''));
+      tr.appendChild(td);
+    }
+    table.appendChild(tr);
+  }
+  return table;
+}
+
+// Adds a header row to the table and returns the set of columns.
+// Need to do union of keys from all records as some records may not contain
+// all records
+function addAllColumnHeaders(arr, table) {
+  var columnSet = [],
+    tr = _tr_.cloneNode(false);
+  for (var i = 0, l = arr.length; i < l; i++) {
+    for (var key in arr[i]) {
+      if (arr[i].hasOwnProperty(key) && columnSet.indexOf(key) === -1) {
+        columnSet.push(key);
+        var th = _th_.cloneNode(false);
+        th.appendChild(document.createTextNode(key));
+        tr.appendChild(th);
+      }
+    }
+  }
+  table.appendChild(tr);
+  return columnSet;
+}
+
+</script>
+<script>
+    /**
+ * Created by Hsol on 2015-07-20.
+ */
+function JSON2Table(id, data, dataType, attr){
+    switch(dataType){
+        case 'url':
+            tInterface.insertTable(id, tInterface.makeTable(tFunction.get.json(data), attr.id, attr.classList));
+            break;
+        case 'json':
+        default:
+            tInterface.insertTable(id, tInterface.makeTable(data, attr.id, attr.classList));
+            break;
+    }
+}
+
+tFunction = {
+    get : {
+        keys : function(object){
+            /**
+             * JSON 형태의 object 의 key 값을 배열로 반환한다.
+             * @method get.keys
+             * @param {object} object (key 값을 얻어 낼 JSON 형태의 object)
+             * @returns {object}
+             */
+
+            if((typeof object) == 'object'){
+                var keys = [];
+                for(var k in object) keys.push(k);
+                return keys;
+            }
+            else if((typeof object) == 'string'){
+                try{
+                    object = JSON.parse(object);
+                    return tFunction.get.keys(object);
+                }
+                catch(error){
+                    console.error("[tFunction.get.keys] " + error.message);
+                }
+            }
+            else{
+                console.error("[tFunction.get.keys] please insert data typeof 'object' or 'JSON'");
+            }
+        },
+        json : function(url){
+            /**
+             * jQuery 의 $.getJSON 구현, 해당하는 url 에서 JSON 타입 response 를 읽어 JSON object 로 반환한다.
+             * @method get.json
+             * @param {String} url (호출할 api url)
+             * @returns {object}
+             */
+
+            var object = null;
+            var xmlHttp = new XMLHttpRequest();
+            xmlHttp.open('GET', url, true);
+            xmlHttp.onreadystatechange = function() {
+                if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
+                    object = JSON.parse(xmlHttp.responseText);
+                }
+                return object;
+            };
+            xmlHttp.send(null);
+        }
+    },
+    set : {
+        table : function(dataSet){
+            /**
+             * JSON object 형태로 받은 dataSet 을 table element 와 유사한 형태로 '보기좋게' 만들어준다.
+             * @method set.table
+             * @param {object} dataSet (형태를 변환 할 JSON 형태의 object)
+             * @returns {object}
+             */
+
+            var table = {
+                thead : {
+                    tr : []
+                },
+                tbody : {
+                    tr : []
+                }
+            };
+
+            table.thead.tr = tFunction.get.keys(dataSet[0]);
+            for(var i in dataSet){
+                table.tbody.tr[i] = Object.keys(dataSet[i]).map(function (key) {return nl2br(dataSet[i][key])});
+            };
+
+            return table;
+        }
+    }
+};
+
+tInterface = {
+    makeTable : function(dataSet, id, classList, isHead){
+        /**
+         * JSON 형태로 받은 dataSet 을 table element 로 만들어준다.
+         * @class makeTable
+         * @constructor
+         * @type html table element
+         * @param {boolean} isHead (head 출력여부 false:출력 true:출력하지않음)
+         * @param {object} dataSet (json 형태로 이루어진 데이터셋, not null)
+         * @param {String} id (table 에 부여될 id attribute)
+         * @param {object, String} classList (table 에 부여될 class attribute)
+         * @returns {element}
+         */
+
+        var index = 0, tr = null, th = null, td = null;
+        var tableData = tFunction.set.table(dataSet);
+        var table = document.createElement("TABLE");
+        var tableHead = table.createTHead().insertRow(0);
+        var tableBody = table.appendChild(document.createElement("TBODY"));
+
+        if(!isHead || isHead == undefined) {
+            for (index in tableData.thead.tr) {
+                th = document.createElement("TH");
+                th.innerHTML = tableData.thead.tr[index];
+                tableHead.appendChild(th);
+            }
+        }
+
+        for(index in tableData.tbody.tr){
+            tr = tableBody.insertRow(index);
+            for(var idx in tableData.tbody.tr[index]){
+                td = tr.insertCell(idx);
+                td.innerHTML = tableData.tbody.tr[index][idx];
+            }
+        }
+
+        if(id != undefined && id != '' && typeof id == 'string')
+            table.setAttribute('id', id);
+        else if(typeof id == 'object')
+            classList = id;
+
+        if(classList != undefined){
+            if(typeof classList == 'object') {
+                for (index in classList) {
+                    if (table.className != "") {
+                        table.className += " ";
+                    }
+                    table.className += classList[index];
+                }
+            }
+            else
+                table.className += classList;
+        }
+
+        return table;
+    },
+    insertTable : function(id, table){
+        if(id != undefined) {
+            if(document.getElementById(id) != null) {
+                var placeOfElement = document.getElementById(id);
+                document.body.insertBefore(table, placeOfElement);
+                placeOfElement.remove();
+            }
+            else{
+                console.error("[tInterface.insertTable] can't find id in document");
+            }
+        }
+        else{
+            console.error("[tInterface.insertTable] please insert parameter 'id'");
+        }
+    }
+};
+
+</script>
 </body>
-</html>
