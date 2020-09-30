@@ -31,41 +31,17 @@ class Pdf:
 
     def imageToText(self, filename):
         img = Image.open('/home/pdf/out' ".jpg")
-        result = pytesseract.image_to_string('/home/pdf/cropped' ".jpg", config='--psm 6 --oem 3 -c preserve_interword_spaces=1x1 tessedit_char_whitelist=|_0123456789ABCDEFGHIJKLMNOPQRSTUVXZÇ./,abcdefghijklmnopqrstuvxzç')
-        
+        result = pytesseract.image_to_string('/home/pdf/cropped' ".jpg", config='--psm 6 --oem 3 -c preserve_interword_spaces=1 tessedit_char_whitelist=|_0123456789ABCDEFGHIJKLMNOPQRSTUVXZÇ./,abcdefghijklmnopqrstuvxzç')
         with open(filename, mode='w') as file:
             file.write(result)
         print(result)
 
     def imageToArray(self):
         img = Image.open('/home/pdf/image' ".jpg")
-        result = pytesseract.image_to_string('/home/pdf/cropped' ".jpg", config='--psm 6 --oem 3 -c preserve_interword_spaces=1x1 tessedit_char_whitelist=|_0123456789ABCDEFGHIJKLMNOPQRSTUVXZÇ./,abcdefghijklmnopqrstuvxzç')
+        result = pytesseract.image_to_string('/home/pdf/cropped' ".jpg", config='--psm 6 --oem 3 -c preserve_interword_spaces=1 tessedit_char_whitelist=|_0123456789ABCDEFGHIJKLMNOPQRSTUVXZÇ./,abcdefghijklmnopqrstuvxzç')
         return result
 
-if __name__ == '__main__':
-    pdf = Pdf('/home/60751689-Modelo-Contra-Cheque.pdf')
-    pdf.transformPdfImage()
-    pdf.cutImage(100, 83, 88, 63)
-    pdf.imageToText('/home/pdf/codigo.txt')
-
-    pdf = Pdf('/home/60751689-Modelo-Contra-Cheque.pdf')
-    pdf.transformPdfImage()
-    pdf.cutImage(87, 83, 58, 63)
-    pdf.imageToText('/home/pdf/descricao.txt')
-
-    pdf = Pdf('/home/60751689-Modelo-Contra-Cheque.pdf')
-    pdf.transformPdfImage()
-    pdf.cutImage(57, 83, 47, 63)
-    pdf.imageToText('/home/pdf/referencia.txt')
-
-    pdf = Pdf('/home/60751689-Modelo-Contra-Cheque.pdf')
-    pdf.transformPdfImage()
-    pdf.cutImage(47, 83, 30, 63)
-    pdf.imageToText('/home/pdf/vencimentos.txt')
-
-    pdf = Pdf('/home/60751689-Modelo-Contra-Cheque.pdf')
-    pdf.transformPdfImage()
-    pdf.cutImage(29, 83, 13.3, 63)
-    pdf.imageToText('/home/pdf/descontos.txt')
-
-    pdf.improvment()
+    def imageToArrayPreserve(self):
+        img = Image.open('/home/pdf/image' ".jpg")
+        result = pytesseract.image_to_string('/home/pdf/cropped' ".jpg", config='--psm 6 --oem 3 -c preserve_interword_spaces=1 tessedit_char_whitelist=|_0123456789ABCDEFGHIJKLMNOPQRSTUVXZÇ./,abcdefghijklmnopqrstuvxzç')
+        return result

@@ -70,6 +70,10 @@
         <input id="fieldName" name="fieldName" />
         Informe a descricao:
         <input id="header" name="header" />
+        <select id="blanks" name="blanks">
+            <option value="0">Preservar Linhas em branco</option>
+            <option selected='selected' value="1">Descartar Linhas em branco</option>
+        </select>
         <button id="confirm">Confirmar</button>
     </dialog>
     <div>
@@ -145,7 +149,18 @@
         },
         extract:[]
     }
-    
+    function hasAlphaNumeric(str) {
+        var code, i, len;
+        for (i = 0, len = str.length; i < len; i++) {
+            code = str.charCodeAt(i);
+            if ((code > 47 && code < 58) || // numeric (0-9)
+                (code > 64 && code < 91) ||  // upper alpha (A-Z)
+                (code > 96 && code < 123)) { // lower alpha (a-z)
+            return true;
+            }
+        }
+        return false;
+    };
     $('#submit').on('click', function(){
         console.log(send)
         axios.post('/test', send)
@@ -158,11 +173,28 @@
                 html+="<th>"+response.data[i]['fieldName']+"</th>"
             }
             html+="</tr>";
-            html+="<tr>";
+            
             for (var i = 0; i < response.data.length; i++) {
-                html+="<td>"+nl2br(response.data[i]['values'])+"</td>"
+                html+='<tr>'
+                response.data[i].forEach(resp => {
+                    html+="<td>"+resp+"</td>"
+                })
+                html+='</tr>'
+
+                /*if (response.data[i]['blanks'] == 1) {
+                    var values = response.data[i]['values'].split("\n");
+                    let newValues = ''
+                    values.forEach(element => {
+                        if (hasAlphaNumeric(element)) {
+                            newValues += element += '\n'
+                        }
+                    });
+                    html+="<td>"+nl2br(newValues)+"</td>"
+                } else {
+                    html+="<td>"+nl2br(response.data[i]['values'])+"</td>"
+                }*/
             }
-            html+="</tr>";
+            
             html+="</table>";
             document.getElementById("table").innerHTML = html;
         })
@@ -206,7 +238,8 @@
                 "x": start.x,
                 "y": start.y,
                 "width": lastWidth,
-                "height": lastHeight
+                "height": lastHeight,
+                "blanks":  $('[name=blanks]').val()
             })
 
             console.log('mouseup')
