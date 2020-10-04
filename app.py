@@ -1,19 +1,22 @@
 import os
-from flask import Flask, request, render_template, jsonify,send_file
+import base64
+import re
+from flask import Flask, request, render_template, jsonify, send_file
 from reader import Pdf
-import  base64
-import re    
+from table import Table
 
-app = Flask(__name__, template_folder='client', static_url_path = "/static", static_folder = "client/static")
+
+app = Flask(__name__, template_folder='client', static_url_path="/static", static_folder="client/static")
 app.debug = True
 
 
 @app.route("/")
 def index():
-    return render_template('index.html', user_image = "static/image.jpg")
+    return render_template('index.html', user_image="static/image.jpg")
+
 
 def load_binary(file):
-    data = open(file,'rb').read()
+    data = open(file, 'rb').read()
     return data
 
 
@@ -29,67 +32,35 @@ def upload():
         return encoded_string
 
 
-@app.route('/test', methods=['POST'])
-def test():
+@app.route('/result', methods=['POST'])
+def result():
     if request.method == 'POST':
         data = request.json
         pdf = Pdf(data['pdf']['path'])
+        #return jsonify(pdf.imageToData().split('\n'))
         result = []
         for extract in data['extract']:
-            pdf.transformPdfImage()
-            pdf.cutImage(extract['x'], extract['y'], extract['width'], extract['height'])
-            if (extract['blanks'] == '1'):
-                result.append({"fieldName": extract['fieldName'], "values": pdf.imageToArrayPreserve(), "blanks": extract['blanks']})
-            else:
-                result.append({"fieldName": extract['fieldName'], "values": pdf.imageToArray(), "blanks": extract['blanks']})
-        lines = pdf.imageToArray().split('\n')
-        i = 0
-        lists = []
-        for line in lines:
-            listIntermediate = []
-            tokens = re.findall('\s+', line)
-            words = line.split('  ')
-            words[:] = [x for x in words if x]
-            newLine = line
-            #newLine = re.sub(r'[^A-Za-z0-9 ]+', '', line)
-            for wordInt in words:
-                word = wordInt.strip()
-                #word = re.sub(r'[^A-Za-z0-9 ]+', '', word)
-                if len(word) > 0:
-                    listIntermediate.append([newLine.find(word), word])
-                    newLine = newLine.replace(word, " "*len(word), 1)
-            lists.append(listIntermediate)
+            if extract['type'] == 'table':
+                pdf.transformPdfImage()
+                pdf.cutImage(extract['coordinates']['x'], extract['coordinates']['y'], extract['coordinates']['width'], extract['coordinates']['height'])
+                test = []
+                for f in extract['fields']:
+                    test.append(f['index'] - 1)
+                table = Table(pdf.imageToArray(),test)
+                result.append({"fieldName": extract['fields'], "values": table.wordsSelected(7)})
 
-        columns = []
-        for listColumn in lists:
-            for lcol in listColumn:
-                if not columns:
-                    columns.append(lcol[0])
-                else:
-                    b = True
-                    for c in columns:
-                        minor = c + 6
-                        major = c - 6
-                        if lcol[0] < minor and lcol[0] > major:
-                            b = False
-                            break
-                    if (b):
-                        columns.append(lcol[0])
-        result = []
-        for listColumn in lists:
-            inermediateResult = []
-            for c in columns:
-                minor = c - 6
-                major = c + 6
-                b = True
-                for lcol in listColumn:
-                    if lcol[0] > minor and lcol[0] < major:
-                        inermediateResult.append(lcol[1])
-                        b = False
-                if b:
-                    inermediateResult.append(' ')
-            result.append(inermediateResult)
         return jsonify(result)
+
+
+@app.route('/table', methods=['POST'])
+def htmlTable():
+    data = request.json
+    pdf = Pdf('/home/pdf/images.pdf')
+    pdf.transformPdfImage()
+    pdf.cutImage(data['x'], data['y'], data['width'], data['height'])
+    table = Table(pdf.imageToArray())
+    return jsonify(table.totalColumns(6))
+
 
 def find_str(s, char):
     index = 0

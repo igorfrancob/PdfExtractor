@@ -66,15 +66,19 @@
         <!--<input id="upload" type=submit value='Upload'>-->
     </form>
     <dialog id="fields">
-        Informe o nome do campo:
+        <!-- Informe o nome do campo:
         <input id="fieldName" name="fieldName" />
         Informe a descricao:
         <input id="header" name="header" />
-        <select id="blanks" name="blanks">
-            <option value="0">Preservar Linhas em branco</option>
-            <option selected='selected' value="1">Descartar Linhas em branco</option>
+        -->
+        <select id="type" name="type">
+            <option selected='selected' value="0">Tabela</option>
+            <option value="1">Campo</option>
         </select>
         <button id="confirm">Confirmar</button>
+    </dialog>
+    <dialog id="createTable">
+        
     </dialog>
     <div>
         <button style="display: none;" id="submit">Gerar Tabela</button>
@@ -143,6 +147,13 @@
         })
     })
 
+    let sendData = {
+        pdf: {
+            path: $('[name=path]').val()
+        },
+        extract:[]
+    }
+
     let send = {
         pdf: {
             path: $('[name=path]').val()
@@ -162,41 +173,45 @@
         return false;
     };
     $('#submit').on('click', function(){
-        console.log(send)
-        axios.post('/test', send)
+        console.log(sendData)
+        axios.post('/result', sendData)
         .then(function (response) {
             $('#viewport').hide()
             console.log(response)
             var html = "<table border='1|1'>";
             html+="<tr>";
-            for (var i = 0; i < response.data.length; i++) {
-                html+="<th>"+response.data[i]['fieldName']+"</th>"
-            }
-            html+="</tr>";
-            
-            for (var i = 0; i < response.data.length; i++) {
-                html+='<tr>'
-                response.data[i].forEach(resp => {
-                    html+="<td>"+resp+"</td>"
-                })
-                html+='</tr>'
+            response.data.forEach(function(rdatas){
+                rdata = rdatas.values
+                cols = rdatas.fieldName
+                for (var i = 0; i < cols.length; i++) {
+                    html+="<th>"+cols[i]['name']+"</th>"
+                }
+                html+="</tr>";
+                
+                for (var i = 0; i < rdata.length; i++) {
+                    html+='<tr>'
+                        rdata[i].forEach(resp => {
+                        html+="<td>"+resp+"</td>"
+                    })
+                    html+='</tr>'
 
-                /*if (response.data[i]['blanks'] == 1) {
-                    var values = response.data[i]['values'].split("\n");
-                    let newValues = ''
-                    values.forEach(element => {
-                        if (hasAlphaNumeric(element)) {
-                            newValues += element += '\n'
-                        }
-                    });
-                    html+="<td>"+nl2br(newValues)+"</td>"
-                } else {
-                    html+="<td>"+nl2br(response.data[i]['values'])+"</td>"
-                }*/
-            }
-            
-            html+="</table>";
-            document.getElementById("table").innerHTML = html;
+                    /*if (response.data[i]['blanks'] == 1) {
+                        var values = response.data[i]['values'].split("\n");
+                        let newValues = ''
+                        values.forEach(element => {
+                            if (hasAlphaNumeric(element)) {
+                                newValues += element += '\n'
+                            }
+                        });
+                        html+="<td>"+nl2br(newValues)+"</td>"
+                    } else {
+                        html+="<td>"+nl2br(response.data[i]['values'])+"</td>"
+                    }*/
+                }
+                
+                html+="</table>";
+                document.getElementById("table").innerHTML = html;
+            })
         })
         .catch(function (error) {
             console.log(error);
@@ -223,13 +238,65 @@
     });
 
     $("#viewport").mouseup(function(e) {
-        console.log(e)
         modal()
-        console.log('mouseup')
         isDown = false;
     });
 
     $('#confirm').on('click', function(){
+        if ($('#type').val() == 0) {
+            let sendTable = {
+                "x": start.x,
+                "y": start.y,
+                "width": lastWidth,
+                "height": lastHeight
+            }
+            document.getElementById("fields").close()
+            axios.post('/table', sendTable).then(function (response) {
+
+                console.log(response.data)
+                $('#createTable').html('')
+                for(i = 1; i <= response.data; i++) {
+                    let div = $('#createTable').append("<div />")
+                    div.append("<input name='name"+i+ "' placeholder='Nome da Coluna "+i+"' />")
+                    div.append("<input name='desc"+i+ "' placeholder='Descricao da Coluna "+i+"' />")
+                    div.append("<label>Descartar</label>")
+                    div.append("<input type='checkbox'  name='enable"+i+ "' />")
+                }
+                let div = $('#createTable').append("<div />")
+                div.append('<button id="confirmCreate">Confirmar</button>')
+                document.getElementById("createTable").showModal(); 
+                $('#confirmCreate').on('click', function(){
+                    let fields = []
+                    for(i = 1; i <= response.data; i++) {
+                        //console.log($("[name='enable"+i+ "']").prop("checked"))
+                        if ($("[name='enable"+i+ "']").prop("checked") == false) {
+                            fields.push({
+                                index: i,
+                                name: $("[name='name"+i+ "']").val(),
+                                description: $("[name='desc"+i+ "']").val()
+                            })
+
+                        }
+                    }
+
+                    sendData.extract.push({
+                        type: 'table',
+                        coordinates: sendTable,
+                        fields: fields
+                    })
+
+                    console.log(sendData)
+                    document.getElementById("createTable").close()
+                })
+            })
+        } else if ($('#type').val() == 1) {
+            console.log('Campo')
+        }
+    })
+
+
+
+    $('#confirma').on('click', function(){
             document.getElementById("fields").close()
             console.log('push')
             send.extract.push({ 
